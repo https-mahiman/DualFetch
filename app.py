@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import yt_dlp
 import os
+import shutil
 import traceback
 
 app = Flask(__name__)
@@ -12,6 +13,27 @@ CONVERTED_FOLDER = "converted"
 
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 os.makedirs(CONVERTED_FOLDER, exist_ok=True)
+
+def get_writable_cookie_path():
+    """Copies read-only Render secret cookies to a writable /tmp directory."""
+    render_secret_path = '/etc/secrets/cookies.txt'
+    local_cookie_path = os.path.join(os.getcwd(), 'cookies.txt')
+    writable_path = '/tmp/cookies.txt'
+
+    source_path = None
+    if os.path.exists(render_secret_path):
+        source_path = render_secret_path
+    elif os.path.exists(local_cookie_path):
+        source_path = local_cookie_path
+
+    if source_path:
+        try:
+            shutil.copyfile(source_path, writable_path)
+            return writable_path
+        except Exception as err:
+            print(f"Failed to copy cookies to /tmp: {err}")
+            return source_path
+    return None
 
 @app.route('/', methods=['GET'])
 def home():
@@ -38,32 +60,23 @@ def download_media():
             'buffersize': 1024 * 64,
             'retries': 10,
             'fragment_retries': 10,
-            'quiet': False,
-            'no_warnings': False,
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             },
+            # Allow generic Web/mweb clients when using cookies
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['android', 'ios', 'web']
+                    'player_client': ['web', 'mweb', 'tv_embedded']
                 }
             }
         }
 
-        # Check for cookies.txt in both default working directory and Render's /etc/secrets path
-        possible_cookie_paths = [
-            os.path.join(os.getcwd(), 'cookies.txt'),
-            '/etc/secrets/cookies.txt',
-            os.path.join(os.path.dirname(__file__), 'cookies.txt')
-        ]
-        
-        for cpath in possible_cookie_paths:
-            if os.path.exists(cpath):
-                ydl_opts['cookiefile'] = cpath
-                print(f"Loaded cookies from: {cpath}")
-                break
+        # Mount writable cookie path
+        cookie_file = get_writable_cookie_path()
+        if cookie_file:
+            ydl_opts['cookiefile'] = cookie_file
+            print(f"Using writable cookies at: {cookie_file}")
 
-        # Configure formats
         if download_type == 'audio':
             ydl_opts.update({
                 'outtmpl': os.path.join(CONVERTED_FOLDER, '%(title)s.%(ext)s'),
@@ -81,7 +94,7 @@ def download_media():
                 'merge_output_format': 'mp4',
             })
 
-        # Process download
+        # Execute extraction and download
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             title = info.get('title', 'media')
