@@ -4,7 +4,7 @@ import yt_dlp
 import os
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 DOWNLOAD_FOLDER = "downloads"
 CONVERTED_FOLDER = "converted"
@@ -29,33 +29,29 @@ def download_media():
         return jsonify({'success': False, 'error': 'Please provide a valid URL'}), 400
 
     try:
-        # Base speed-optimized options
         ydl_opts = {
-    'restrictfilenames': True,
-    'noplaylist': True,
-    
-    # Speed & Network Settings
-    'concurrent_fragment_downloads': 8,
-    'http_chunk_size': 10485760,
-    'buffersize': 1024 * 64,
-    'retries': 10,
-    'fragment_retries': 10,
-
-    # Browser Impersonation (Bypasses Cloudflare 403)
-    'impersonate': 'chrome',
-    'extractor_args': {
-        'youtube': {
-            'player_client': ['tv_embedded', 'creator', 'mweb', 'ios', 'android'],
-            'player_skip': ['webpage', 'configs']
-        },
-        'generic': {
-            'impersonate': ['chrome']
+            'restrictfilenames': True,
+            'noplaylist': True,
+            'concurrent_fragment_downloads': 8,
+            'http_chunk_size': 10485760,
+            'buffersize': 1024 * 64,
+            'retries': 10,
+            'fragment_retries': 10,
+            
+            # Browser impersonation (fixes Cloudflare 403 on Pixabay / generic sites)
+            'impersonate': 'chrome',
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'ios', 'web']
+                },
+                'generic': {
+                    'impersonate': ['chrome']
+                }
+            }
         }
-    }
-}
 
-        # Auto-detect cookies.txt if provided in root folder
-        cookie_path = os.path.join(os.path.dirname(__file__), 'cookies.txt')
+        # Check for cookies file (fixes YouTube bot detection)
+        cookie_path = os.path.join(os.getcwd(), 'cookies.txt')
         if os.path.exists(cookie_path):
             ydl_opts['cookiefile'] = cookie_path
 
@@ -70,26 +66,20 @@ def download_media():
                 }],
             })
         else:
-            # Direct stream muxing (Instant container merge without CPU re-encoding)
             ydl_opts.update({
                 'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
                 'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best',
                 'merge_output_format': 'mp4',
             })
 
-        # Process the download
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             title = info.get('title', 'media')
             extractor = info.get('extractor_key', 'Generic')
             base_filepath = os.path.splitext(ydl.prepare_filename(info))[0]
 
-            if download_type == 'audio':
-                final_file = f"{base_filepath}.mp3"
-                target_folder = CONVERTED_FOLDER
-            else:
-                final_file = f"{base_filepath}.mp4"
-                target_folder = DOWNLOAD_FOLDER
+            final_file = f"{base_filepath}.mp3" if download_type == 'audio' else f"{base_filepath}.mp4"
+            target_folder = CONVERTED_FOLDER if download_type == 'audio' else DOWNLOAD_FOLDER
 
         return jsonify({
             'success': True,
@@ -102,6 +92,8 @@ def download_media():
         })
 
     except Exception as e:
+        import traceback
+        print("Backend Error:", traceback.format_exc())
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
