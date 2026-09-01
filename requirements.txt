@@ -1,4 +1,5 @@
 Flask
 Flask-Cors
-yt-dlp>=2025.01.01
+yt-dlp[default,curl-cffi]
+curl_cffi
 gunicorn

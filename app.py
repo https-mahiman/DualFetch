@@ -31,26 +31,28 @@ def download_media():
     try:
         # Base speed-optimized options
         ydl_opts = {
-            'restrictfilenames': True,
-            'noplaylist': True,
-            
-            # --- SPEED OPTIMIZATIONS ---
-            'concurrent_fragment_downloads': 8,   # Download 8 chunks in parallel
-            'http_chunk_size': 10485760,          # 10MB chunk size to maximize throughput
-            'buffersize': 1024 * 64,              # 64 KB memory buffer
-            'retries': 10,                        # Auto-retry dropped connections
-            'fragment_retries': 10,
-            
-            'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            },
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['tv_embedded', 'creator', 'mweb', 'ios', 'android'],
-                    'player_skip': ['webpage', 'configs']
-                }
-            }
+    'restrictfilenames': True,
+    'noplaylist': True,
+    
+    # Speed & Network Settings
+    'concurrent_fragment_downloads': 8,
+    'http_chunk_size': 10485760,
+    'buffersize': 1024 * 64,
+    'retries': 10,
+    'fragment_retries': 10,
+
+    # Browser Impersonation (Bypasses Cloudflare 403)
+    'impersonate': 'chrome',
+    'extractor_args': {
+        'youtube': {
+            'player_client': ['tv_embedded', 'creator', 'mweb', 'ios', 'android'],
+            'player_skip': ['webpage', 'configs']
+        },
+        'generic': {
+            'impersonate': ['chrome']
         }
+    }
+}
 
         # Auto-detect cookies.txt if provided in root folder
         cookie_path = os.path.join(os.path.dirname(__file__), 'cookies.txt')
