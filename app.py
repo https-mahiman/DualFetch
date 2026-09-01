@@ -17,25 +17,43 @@ CONVERTED_FOLDER = os.path.join(BASE_DIR, 'converted')
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 os.makedirs(CONVERTED_FOLDER, exist_ok=True)
 
-def get_writable_cookie_path():
-    """Copies read-only Render secret cookies to a writable /tmp directory."""
-    render_secret_path = '/etc/secrets/cookies.txt'
-    local_cookie_path = os.path.join(os.getcwd(), 'cookies.txt')
-    writable_path = '/tmp/cookies.txt'
 
-    source_path = None
-    if os.path.exists(render_secret_path):
-        source_path = render_secret_path
-    elif os.path.exists(local_cookie_path):
-        source_path = local_cookie_path
+def get_cookie_file():
+    """Return a readable cookie file path for sites that require authentication."""
+    candidate_paths = [
+        os.environ.get('YOUTUBE_COOKIES'),
+        os.environ.get('COOKIE_FILE'),
+        '/etc/secrets/cookies.txt',
+        os.path.join(BASE_DIR, 'cookies.txt'),
+        os.path.join(os.getcwd(), 'cookies.txt'),
+    ]
 
-    if source_path:
+    seen = set()
+    for raw_path in candidate_paths:
+        if not raw_path:
+            continue
+        if raw_path in seen:
+            continue
+        seen.add(raw_path)
+
+        if not os.path.exists(raw_path):
+            continue
+
         try:
-            shutil.copyfile(source_path, writable_path)
-            return writable_path
+            if os.path.isfile(raw_path):
+                if os.access(raw_path, os.R_OK):
+                    source = raw_path
+                    writable_path = '/tmp/cookies.txt'
+                    try:
+                        if source != writable_path:
+                            shutil.copyfile(source, writable_path)
+                        return writable_path
+                    except Exception as err:
+                        print(f"Failed to copy cookies to /tmp: {err}")
+                        return source
         except Exception as err:
-            print(f"Failed to copy cookies to /tmp: {err}")
-            return source_path
+            print(f"Cookie path check failed for {raw_path}: {err}")
+
     return None
 
 @app.route('/', methods=['GET'])
@@ -62,6 +80,15 @@ def download_media():
     if not url:
         return jsonify({'success': False, 'error': 'Please provide a valid URL'}), 400
 
+    is_youtube_url = 'youtube.com' in url.lower() or 'youtu.be' in url.lower()
+    if is_youtube_url:
+        cookie_file = get_cookie_file()
+        if not cookie_file:
+            return jsonify({
+                'success': False,
+                'error': 'YouTube requires a valid cookies.txt file. Add cookies.txt to the app root or set YOUTUBE_COOKIES / COOKIE_FILE in the hosting environment.'
+            }), 403
+
     try:
         ydl_opts = {
             'restrictfilenames': True,
@@ -81,8 +108,8 @@ def download_media():
             }
         }
 
-        # Mount writable cookie path to prevent read-only filesystem crash
-        cookie_file = get_writable_cookie_path()
+        # Mount a writable cookie path to prevent read-only filesystem crash
+        cookie_file = get_cookie_file()
         if cookie_file:
             ydl_opts['cookiefile'] = cookie_file
             print(f"Using writable cookies from: {cookie_file}")

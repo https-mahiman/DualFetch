@@ -3,3 +3,4 @@ Flask-Cors
 yt-dlp
 curl_cffi
 gunicorn
+browser-cookie3
