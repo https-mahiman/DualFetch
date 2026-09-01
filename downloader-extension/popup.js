@@ -44,14 +44,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     spinner.classList.remove("hidden");
 
     try {
-      const response = await fetch("http://localhost:5000/download", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: url,
-          type: selectedType,
-        }),
-      });
+      const response = await fetch(
+        "https://dualfetch-api.onrender.com/download",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: url,
+            type: selectedType,
+          }),
+        },
+      );
 
       const data = await response.json();
 
