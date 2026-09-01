@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Media Downloader Assistant",
+  "version": "1.0",
+  "description": "Download Video (MP4) or Audio (MP3) from the current tab with one click.",
+  "permissions": ["activeTab", "tabs"],
+  "host_permissions": ["http://localhost:5000/*", "http://127.0.0.1:5000/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Download Media"
+  }
+}

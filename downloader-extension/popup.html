@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="ext-container">
+      <div class="ext-header">
+        <h3>Media Downloader</h3>
+        <span class="badge">V1.0</span>
+      </div>
+
+      <!-- Active Tab URL (Auto-filled) -->
+      <div class="input-section">
+        <label for="pageUrl">Target URL</label>
+        <input
+          type="text"
+          id="pageUrl"
+          placeholder="Fetching active tab URL..."
+        />
+      </div>
+
+      <!-- Video vs Audio Selection -->
+      <div class="type-selector">
+        <label class="radio-label">
+          <input type="radio" name="downloadType" value="video" checked />
+          <span class="pill">🎥 Video (MP4)</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="downloadType" value="audio" />
+          <span class="pill">🎵 Audio (MP3)</span>
+        </label>
+      </div>
+
+      <!-- Action Button -->
+      <button id="downloadBtn">
+        <span class="btn-text">Download Now</span>
+        <span class="spinner hidden"></span>
+      </button>
+
+      <!-- Feedback Message -->
+      <div id="statusMessage" class="status hidden"></div>
+
+      <!-- Result Details -->
+      <div id="resultBox" class="result-box hidden">
+        <div id="mediaTitle" class="title"></div>
+        <div class="meta">
+          <strong>Saved to:</strong> <span id="saveFolder"></span>
+        </div>
+      </div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

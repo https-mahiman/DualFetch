@@ -1,0 +1,32 @@
+# Python cache and byte-code
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Temporary media storage folders
+downloads/
+converted/
+temp/
+
+# Log files
+*.log
+
+# Environment variables & secrets
+.env
+.env.local
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# VS Code / IDE configuration
+.vscode/
+.idea/
