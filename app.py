@@ -63,7 +63,6 @@ def download_media():
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             },
-            # Allow generic Web/mweb clients when using cookies
             'extractor_args': {
                 'youtube': {
                     'player_client': ['web', 'mweb', 'tv_embedded']
@@ -71,12 +70,13 @@ def download_media():
             }
         }
 
-        # Mount writable cookie path
+        # Mount writable cookie path to prevent read-only filesystem crash
         cookie_file = get_writable_cookie_path()
         if cookie_file:
             ydl_opts['cookiefile'] = cookie_file
-            print(f"Using writable cookies at: {cookie_file}")
+            print(f"Using writable cookies from: {cookie_file}")
 
+        # Universal fallback formats with FFmpeg processing
         if download_type == 'audio':
             ydl_opts.update({
                 'outtmpl': os.path.join(CONVERTED_FOLDER, '%(title)s.%(ext)s'),
@@ -90,11 +90,14 @@ def download_media():
         else:
             ydl_opts.update({
                 'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
-                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best',
+                'format': 'bv*+ba/b',
                 'merge_output_format': 'mp4',
+                'postprocessor_args': {
+                    'Merger': ['-c:v', 'copy', '-c:a', 'aac']
+                }
             })
 
-        # Execute extraction and download
+        # Process download
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             title = info.get('title', 'media')
