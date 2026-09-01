@@ -5,11 +5,14 @@ import os
 import shutil
 import traceback
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PORT = int(os.environ.get('PORT', '5000'))
+
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-DOWNLOAD_FOLDER = "downloads"
-CONVERTED_FOLDER = "converted"
+DOWNLOAD_FOLDER = os.path.join(BASE_DIR, 'downloads')
+CONVERTED_FOLDER = os.path.join(BASE_DIR, 'converted')
 
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 os.makedirs(CONVERTED_FOLDER, exist_ok=True)
@@ -39,7 +42,15 @@ def get_writable_cookie_path():
 def home():
     return jsonify({
         'status': 'online',
-        'message': 'DualFetch Media API is running successfully!'
+        'message': 'DualFetch Media API is running successfully!',
+        'port': PORT,
+    }), 200
+
+@app.route('/healthz', methods=['GET'])
+def healthz():
+    return jsonify({
+        'status': 'ok',
+        'service': 'dualfetch-media-api'
     }), 200
 
 @app.route('/download', methods=['POST'])
@@ -128,4 +139,4 @@ def download_media():
         }), 500
 
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+    app.run(host='0.0.0.0', port=PORT, debug=False)
