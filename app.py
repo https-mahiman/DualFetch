@@ -128,16 +128,27 @@ def download_media():
         else:
             ydl_opts.update({
                 'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s'),
-                'format': 'bv*+ba/b',
+                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
                 'merge_output_format': 'mp4',
                 'postprocessor_args': {
                     'Merger': ['-c:v', 'copy', '-c:a', 'aac']
                 }
             })
 
-        # Process download
+        # Process download with a safe retry if YouTube rejects the preferred video format.
+        info = None
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
+            try:
+                info = ydl.extract_info(url, download=True)
+            except yt_dlp.utils.DownloadError as exc:
+                if download_type != 'audio' and 'Requested format is not available' in str(exc):
+                    fallback_opts = {**ydl_opts, 'format': 'bestvideo+bestaudio/best'}
+                    fallback_opts.pop('merge_output_format', None)
+                    fallback_opts.pop('postprocessor_args', None)
+                    with yt_dlp.YoutubeDL(fallback_opts) as fallback_ydl:
+                        info = fallback_ydl.extract_info(url, download=True)
+                else:
+                    raise
             title = info.get('title', 'media')
             extractor = info.get('extractor_key', 'Generic')
             base_filepath = os.path.splitext(ydl.prepare_filename(info))[0]
