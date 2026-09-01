@@ -1,7 +1,7 @@
 services:
   - type: web
     name: dualfetch-media-api
-    env: python
+    runtime: python
     plan: free
     region: oregon
     buildCommand: pip install -r requirements.txt
