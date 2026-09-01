@@ -12,6 +12,13 @@ CONVERTED_FOLDER = "converted"
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 os.makedirs(CONVERTED_FOLDER, exist_ok=True)
 
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({
+        'status': 'online',
+        'message': 'DualFetch Media API is running successfully!'
+    }), 200
+
 @app.route('/download', methods=['POST'])
 def download_media():
     data = request.get_json() or {}
@@ -39,10 +46,16 @@ def download_media():
             },
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['android', 'ios', 'web']
+                    'player_client': ['tv_embedded', 'creator', 'mweb', 'ios', 'android'],
+                    'player_skip': ['webpage', 'configs']
                 }
             }
         }
+
+        # Auto-detect cookies.txt if provided in root folder
+        cookie_path = os.path.join(os.path.dirname(__file__), 'cookies.txt')
+        if os.path.exists(cookie_path):
+            ydl_opts['cookiefile'] = cookie_path
 
         if download_type == 'audio':
             ydl_opts.update({
